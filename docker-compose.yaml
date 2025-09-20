@@ -7,17 +7,18 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - ./server/.env
+    environment:
+      - DB_HOST=postgres
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     depends_on:
-      - postgres
-    networks:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   postgres:
     container_name: postgres_container
-    image: postgres
+    image: postgres:17.6
     env_file:
       - .env
     environment:
@@ -26,8 +27,12 @@ services:
       - postgres:/data/postgres
     ports:
       - "5432:5432"
-    networks:
-      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   pgadmin:
@@ -37,13 +42,11 @@ services:
       - .env
     volumes:
       - pgadmin:/var/lib/pgadmin
-
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "${PGADMIN_PORT:-5050}:80"
-    networks:
-      - postgres
     restart: unless-stopped
 
 networks:
