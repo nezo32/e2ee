@@ -10,6 +10,6 @@ type serverConfig struct {
 func initServerConfig() *serverConfig {
 	return &serverConfig{
 		Address:  os.Getenv("SERVER_PORT"),
-		Endpoint: os.Getenv("SERVER_ENDPOINT"),
+		Endpoint: os.Getenv("SERVER_ADDRESS"),
 	}
 }

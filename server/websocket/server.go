@@ -4,15 +4,13 @@ import (
 	"net/http"
 
 	"github.com/charmbracelet/log"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
+	"golang.org/x/net/websocket"
 )
 
 type serverImpl struct {
 	address string
 	endpoint string
-	upgrader websocket.Upgrader
-	clients map[uuid.UUID]*websocket.Conn
+	config *websocket.Config
 }
 
 type Server interface {
@@ -22,44 +20,45 @@ type Server interface {
 type ServerParams struct {
 	Address string
 	Endpoint string
-	Upgrader websocket.Upgrader
+	Config *websocket.Config
 }
 
 func NewServer(params *ServerParams) Server {
 	return &serverImpl{
 		address: params.Address,
-		upgrader: params.Upgrader,
 		endpoint: params.Endpoint,
-		clients: make(map[uuid.UUID]*websocket.Conn),
+		config: params.Config,
 	}
 }
 
 func (s *serverImpl) Start() {
-	http.HandleFunc(s.endpoint, s.handleConnection)
-	http.ListenAndServe(s.address, nil)
+	chatHandler := websocket.Server{
+	    Handler: s.handleConnection,
+	    Config:  *s.config,
+	}
+
+	http.Handle(s.endpoint, chatHandler)
+	log.Info("Server started", "address", s.address, "endpoint", s.endpoint)
+	log.Fatal(http.ListenAndServe(s.address, nil))
 }
 
-func (s *serverImpl) handleConnection(w http.ResponseWriter, r *http.Request) {
-	conn, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Error("Upgrade error", "error", err)
-		return
-	}
-	defer conn.Close()
-
-	id := uuid.New()
-	s.clients[id] = conn
-
-	log.Info("Client connected", "user", id)
+func (s *serverImpl) handleConnection(conn *websocket.Conn) {
+	log.Info("Client connected")
 
 	for {
-		mt, _, err := conn.ReadMessage()
-
-		if err != nil || mt == websocket.CloseMessage {
-			log.Info("Client disconnected", "user", id.String())
+		if conn.IsClientConn() {
+			log.Info("Client disconnected")
 			break
 		}
 
-		log.Info("Received message", "user", id.String())
+		packet, err := ReadPacket(conn)
+		if err != nil {
+			log.Error(err)
+		}
+
+		err = WritePacket(conn, packet)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }

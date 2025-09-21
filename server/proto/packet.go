@@ -1,9 +1,7 @@
 package proto
 
 import (
-	"bytes"
 	"encoding/binary"
-	"io"
 
 	"github.com/google/uuid"
 	"github.com/nezo32/e2ee/security"
@@ -69,7 +67,7 @@ func NewPacket(params *PacketParams) Packet {
 	return p
 }
 
-func packetFromBytes(data []byte) (Packet, error) {
+func PacketFromBytes(data []byte) (Packet, error) {
 	if len(data) < PacketHeaderSize+PacketPostfixSize+1 {
 		return nil, ErrorPacketZeroLength
 	}
@@ -91,46 +89,6 @@ func packetFromBytes(data []byte) (Packet, error) {
 	}
 
 	return p, nil
-}
-
-func ReadPacket(r io.Reader) (Packet, error) {
-	buf := make([]byte, PacketBufferSize)
-	var completeMessage bytes.Buffer
-
-	firstPacket := true
-	totalRead := 0
-	targetRead := uint32(0)
-
-	for {
-		n, err := r.Read(buf)
-		if err != nil {
-			if err == io.EOF && totalRead > 0 {
-				return nil, io.EOF
-			}
-			return nil, err
-		}
-
-		totalRead += n
-		completeMessage.Write(buf[:n])
-
-		if firstPacket {
-			if len(buf) < PacketHeaderSize {
-				return nil, ErrorPacketNoHeader
-			}
-			firstPacket = false
-			targetRead = binary.LittleEndian.Uint32(buf[:4])
-		}
-
-		if uint32(totalRead) >= targetRead {
-			break
-		}
-
-		if totalRead > PacketMaxMessage {
-			return nil, ErrorPacketTooLarge
-		}
-	}
-
-	return packetFromBytes(completeMessage.Bytes())
 }
 
 func (p *packetImpl) Build() []byte {
