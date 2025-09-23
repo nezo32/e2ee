@@ -1,13 +1,7 @@
-import { withGluestackUI } from '@gluestack/ui-next-adapter';
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  transpilePackages: [],
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+
 };
 
-export default withGluestackUI(nextConfig);
+export default nextConfig;
