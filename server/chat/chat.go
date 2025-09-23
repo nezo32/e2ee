@@ -3,7 +3,7 @@ package chat
 import "github.com/google/uuid"
 
 type chatImpl struct {
-	ID uuid.UUID
+	ID      uuid.UUID
 	Members uuid.UUIDs
 }
 

@@ -16,7 +16,6 @@ func initLogConfig() *logConfig {
 	}
 }
 
-
 func (cfg *logConfig) SetupLogger() {
 	level, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {

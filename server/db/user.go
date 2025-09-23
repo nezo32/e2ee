@@ -7,9 +7,8 @@ import (
 
 type User struct {
 	gorm.Model
-	ID           	uuid.UUID      	`gorm:"primaryKey,type:uuid;default:uuid_generate_v4()"`
-	Username     	string      	`gorm:"uniqueIndex;not null"`
-	Mail 	  		string      	`gorm:"uniqueIndex;not null"`
-	PasswordHash 	string      	`gorm:"not null"`
+	ID           uuid.UUID `gorm:"primaryKey,type:uuid;default:uuid_generate_v4()"`
+	Username     string    `gorm:"uniqueIndex;not null"`
+	Mail         string    `gorm:"uniqueIndex;not null"`
+	PasswordHash string    `gorm:"not null"`
 }
-

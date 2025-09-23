@@ -12,10 +12,16 @@ import (
 )
 
 func WritePacket(conn *websocket.Conn, packet proto.Packet) error {
+	w, err := conn.NewFrameWriter(websocket.BinaryFrame)
+	if err != nil {
+		return fmt.Errorf("frame writer error: %w", err)
+	}
+	defer w.Close()
+
 	data := packet.Build()
 	totalWritten := 0
 	for totalWritten < len(data) {
-		n, err := conn.Write(data[totalWritten:])
+		n, err := w.Write(data[totalWritten:])
 		if err != nil {
 			return fmt.Errorf("websocket error: write error after %d bytes: %w", totalWritten, err)
 		}

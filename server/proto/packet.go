@@ -3,19 +3,19 @@ package proto
 import (
 	"encoding/binary"
 
+	"github.com/charmbracelet/log"
 	"github.com/google/uuid"
 	"github.com/nezo32/e2ee/security"
 )
 
 const (
-	PacketTypeRaw = 1 << iota
-	PacketTypeFile
+	PacketTypeFile = 1 << iota
 	PacketTypeEncrypted
 )
 
 type packetImpl struct {
-	size uint32
-	data []byte
+	size       uint32
+	data       []byte
 	packetType byte
 
 	origin uuid.UUID
@@ -39,7 +39,7 @@ type Packet interface {
 }
 
 type PacketParams struct {
-	IsFile bool
+	IsFile      bool
 	IsEncrypted bool
 
 	Data []byte
@@ -50,17 +50,18 @@ type PacketParams struct {
 
 func NewPacket(params *PacketParams) Packet {
 	p := &packetImpl{
-		size: uint32(PacketHeaderSize + len(params.Data) + PacketPostfixSize),
-		data: params.Data,
-		origin: params.Origin,
-		target: params.Target,
+		size:       uint32(PacketHeaderSize + len(params.Data) + PacketPostfixSize),
+		data:       params.Data,
+		origin:     params.Origin,
+		target:     params.Target,
+		packetType: byte(0),
 	}
 
-	if (params.IsFile) {
+	if params.IsFile {
 		p.packetType |= PacketTypeFile
 	}
 
-	if (params.IsEncrypted) {
+	if params.IsEncrypted {
 		p.packetType |= PacketTypeEncrypted
 	}
 
@@ -81,11 +82,11 @@ func PacketFromBytes(data []byte) (Packet, error) {
 	}
 
 	p := &packetImpl{
-		data: data[PacketHeaderSize : len(data)-PacketPostfixSize],
-		size: binary.LittleEndian.Uint32(data[:4]),
+		data:       data[PacketHeaderSize : len(data)-PacketPostfixSize],
+		size:       binary.LittleEndian.Uint32(data[:4]),
 		packetType: data[4],
-		origin: uuid.UUID(data[5 : 5+16]),
-		target: uuid.UUID(data[5+16 : 5+16+16]),
+		origin:     uuid.UUID(data[5 : 5+16]),
+		target:     uuid.UUID(data[5+16 : 5+16+16]),
 	}
 
 	return p, nil
@@ -93,17 +94,22 @@ func PacketFromBytes(data []byte) (Packet, error) {
 
 func (p *packetImpl) Build() []byte {
 	// allocate
-	buf := make([]byte, PacketHeaderSize+len(p.data)+PacketPostfixSize)
+	buf := make([]byte, 0, p.size)
 
 	// header
 	buf = binary.LittleEndian.AppendUint32(buf, p.size)
 	buf = append(buf, byte(p.packetType))
+	buf = append(buf, p.origin[:]...)
+	buf = append(buf, p.target[:]...)
 
 	// data
 	buf = append(buf, p.data...)
 
 	// postfix
-	buf = binary.LittleEndian.AppendUint32(buf, security.HashSum(p.data))
+	hs := security.HashSum(buf)
+	buf = binary.LittleEndian.AppendUint32(buf, hs)
+
+	log.Info("Hashing buffer", "hashsum", hs)
 
 	return buf
 }
@@ -125,11 +131,11 @@ func (p *packetImpl) GetOrigin() uuid.UUID {
 }
 
 func (p *packetImpl) IsFile() bool {
-	return p.packetType & PacketTypeFile != 0
+	return p.packetType&PacketTypeFile != 0
 }
 
 func (p *packetImpl) IsEncrypted() bool {
-	return p.packetType & PacketTypeEncrypted != 0
+	return p.packetType&PacketTypeEncrypted != 0
 }
 
 func (p *packetImpl) SetData(data []byte) {

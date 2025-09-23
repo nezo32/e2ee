@@ -1,16 +1,20 @@
 package websocket
 
 import (
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/google/uuid"
+	"github.com/nezo32/e2ee/proto"
 	"golang.org/x/net/websocket"
 )
 
 type serverImpl struct {
-	address string
+	address  string
 	endpoint string
-	config *websocket.Config
+	config   *websocket.Config
 }
 
 type Server interface {
@@ -18,23 +22,23 @@ type Server interface {
 }
 
 type ServerParams struct {
-	Address string
+	Address  string
 	Endpoint string
-	Config *websocket.Config
+	Config   *websocket.Config
 }
 
 func NewServer(params *ServerParams) Server {
 	return &serverImpl{
-		address: params.Address,
+		address:  params.Address,
 		endpoint: params.Endpoint,
-		config: params.Config,
+		config:   params.Config,
 	}
 }
 
 func (s *serverImpl) Start() {
 	chatHandler := websocket.Server{
-	    Handler: s.handleConnection,
-	    Config:  *s.config,
+		Handler: s.handleConnection,
+		Config:  *s.config,
 	}
 
 	http.Handle(s.endpoint, chatHandler)
@@ -50,6 +54,33 @@ func (s *serverImpl) handleConnection(conn *websocket.Conn) {
 			log.Info("Client disconnected")
 			break
 		}
+
+		go (func() {
+			for {
+
+				data, err := json.Marshal("bebrochka")
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+
+				packet := proto.NewPacket(&proto.PacketParams{
+					IsEncrypted: false,
+					IsFile:      false,
+					Data:        data,
+					Origin:      uuid.New(),
+					Target:      uuid.New(),
+				})
+
+				err = WritePacket(conn, packet)
+				if err != nil {
+					log.Error(err)
+					break
+				}
+
+				time.Sleep(1 * time.Second)
+			}
+		})()
 
 		packet, err := ReadPacket(conn)
 		if err != nil {

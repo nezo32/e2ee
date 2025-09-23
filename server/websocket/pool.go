@@ -6,6 +6,6 @@ import (
 )
 
 type poolImpl struct {
-	ID uuid.UUID
+	ID      uuid.UUID
 	clients map[uuid.UUID]*websocket.Conn
 }

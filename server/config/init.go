@@ -4,8 +4,8 @@ import "github.com/joho/godotenv"
 
 type Config struct {
 	DatabaseConfig *dbConfig
-	LogConfig *logConfig
-	ServerConfig *serverConfig
+	LogConfig      *logConfig
+	ServerConfig   *serverConfig
 }
 
 func InitConfig() *Config {
@@ -13,7 +13,7 @@ func InitConfig() *Config {
 
 	return &Config{
 		DatabaseConfig: initDbConfig(),
-		LogConfig: initLogConfig(),
-		ServerConfig: initServerConfig(),
+		LogConfig:      initLogConfig(),
+		ServerConfig:   initServerConfig(),
 	}
 }

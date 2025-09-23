@@ -31,7 +31,7 @@ func (cfg *dbConfig) SetupDatabase(dbType DBType) *gorm.DB {
 	log.Info("Connecting to database")
 	db, err := gorm.Open(dbType.dialector(cfg), &gorm.Config{})
 
-	if (err != nil) {
+	if err != nil {
 		log.Fatal("Failed to connect database", "error", err)
 	}
 
@@ -45,7 +45,8 @@ type DBType interface {
 	dsn(cfg *dbConfig) string
 }
 
-type PostgresDB struct {}
+type PostgresDB struct{}
+
 func (db PostgresDB) dsn(cfg *dbConfig) string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", cfg.Host, cfg.User, cfg.Password, cfg.DbName, cfg.Port)
 }
